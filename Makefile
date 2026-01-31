@@ -5,25 +5,28 @@ TARGET      := MetodoGhioDS
 DEVKITPRO   := /opt/devkitpro
 DEVKITARM   := $(DEVKITPRO)/devkitARM
 
-# Importamos las reglas de devkitPro
+# Importamos las reglas oficiales
 include $(DEVKITARM)/ds_rules
 
-# Forzamos el uso del compilador de ARM para todas las tareas
+# Forzamos los compiladores
 CC      := arm-none-eabi-gcc
 LD      := arm-none-eabi-gcc
 
-# Flags corregidos para evitar errores de Linker y encontrar las librerías
-CFLAGS  := -DARM9 -march=armv5te -mtune=arm946e-s -O2 -Wall \
-           -I$(DEVKITPRO)/libnds/include
+# FLAGS CORREGIDOS:
+# 1. Añadimos -DARM9 (Vital para que nds.h funcione)
+# 2. Añadimos las rutas de inclusión de libnds Y calico
+CFLAGS  := $(ARCH) -DARM9 -march=armv5te -mtune=arm946e-s -O2 -Wall \
+           -I$(DEVKITPRO)/libnds/include \
+           -I$(DEVKITPRO)/libnds/include/protocol
 
-# Specs es el archivo que define la memoria de la NDS
-LDFLAGS := -specs=ds_arm9.specs -mthumb -mthumb-interwork $(ARCH) \
+# LDFLAGS: Aseguramos el uso de specs para NDS
+LDFLAGS := -specs=ds_arm9.specs $(ARCH) \
            -L$(DEVKITPRO)/libnds/lib -Wl,-Map,$(TARGET).map
 
 LIBS    := -lnds9
 
 #---------------------------------------------------------------------------------
-# REGLAS DE COMPILACIÓN
+# REGLAS
 #---------------------------------------------------------------------------------
 .PHONY: all clean
 
