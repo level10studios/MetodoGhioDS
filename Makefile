@@ -1,33 +1,24 @@
-#---------------------------------------------------------------------------------
-# CONFIGURACIÓN DEL PROYECTO
-#---------------------------------------------------------------------------------
+# Nombre del archivo final
 TARGET      := MetodoGhioDS
-DEVKITPRO   := /opt/devkitpro
-DEVKITARM   := $(DEVKITPRO)/devkitARM
 
-# Importamos las reglas oficiales
+# Importar las reglas de devkitARM
+ifeq ($(strip $(DEVKITARM)),)
+$(error "DEVKITARM no detectado")
+endif
+
 include $(DEVKITARM)/ds_rules
 
-# Forzamos los compiladores
-CC      := arm-none-eabi-gcc
-LD      := arm-none-eabi-gcc
+# Usamos pkg-config para obtener las rutas exactas de libnds automáticamente
+# Esto soluciona el error de calico.h y de la arquitectura ARM9
+PKG_CFLAGS  := $(shell pkg-config --cflags libnds)
+PKG_LIBS    := $(shell pkg-config --libs libnds)
 
-# FLAGS CORREGIDOS:
-# 1. Añadimos -DARM9 (Vital para que nds.h funcione)
-# 2. Añadimos las rutas de inclusión de libnds Y calico
-CFLAGS  := $(ARCH) -DARM9 -march=armv5te -mtune=arm946e-s -O2 -Wall \
-           -I$(DEVKITPRO)/libnds/include \
-           -I$(DEVKITPRO)/libnds/include/protocol
+# Configuración de Flags
+CFLAGS      := -g -Wall -O2 $(ARCH) $(PKG_CFLAGS)
+LDFLAGS     := -specs=ds_arm9.specs -g $(ARCH)
+LIBS        := $(PKG_LIBS)
 
-# LDFLAGS: Aseguramos el uso de specs para NDS
-LDFLAGS := -specs=ds_arm9.specs $(ARCH) \
-           -L$(DEVKITPRO)/libnds/lib -Wl,-Map,$(TARGET).map
-
-LIBS    := -lnds9
-
-#---------------------------------------------------------------------------------
-# REGLAS
-#---------------------------------------------------------------------------------
+# Reglas de construcción
 .PHONY: all clean
 
 all: $(TARGET).nds
@@ -36,7 +27,7 @@ $(TARGET).nds: $(TARGET).elf
 	@ndstool -c $@ -9 $<
 
 $(TARGET).elf: main.o
-	$(LD) $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 main.o: main.c
 	$(CC) $(CFLAGS) -c $< -o $@
