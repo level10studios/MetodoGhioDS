@@ -1,9 +1,6 @@
 #define ARM9
 #define __NDS__
 #include <nds.h>
-// ... resto de tu código
-
-#include <nds.h>
 #include <stdio.h>
 
 int main(void) {
