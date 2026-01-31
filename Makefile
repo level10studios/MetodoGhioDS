@@ -2,31 +2,28 @@
 # CONFIGURACIÓN DEL PROYECTO
 #---------------------------------------------------------------------------------
 TARGET      := MetodoGhioDS
-BUILD       := build
-SOURCES     := .
-INCLUDES    := .
+DEVKITPRO   := /opt/devkitpro
+DEVKITARM   := $(DEVKITPRO)/devkitARM
 
-# Importar configuraciones de devkitARM
-ifeq ($(strip $(DEVKITARM)),)
-$(error "DEVKITARM no está definido. Revisa tu instalación.")
-endif
-
+# Importamos las reglas de devkitPro
 include $(DEVKITARM)/ds_rules
 
-# Definir flags correctamente
-# ARCH se define en ds_rules (normalmente -mthumb -mthumb-interwork)
-CFLAGS   := -g -Wall -O2 -march=armv5te -mtune=arm946e-s -fomit-frame-pointer -ffast-math $(ARCH) -DARM9
-CXXFLAGS := $(CFLAGS)
-LDFLAGS  := -g $(ARCH) -mthumb -mthumb-interwork -Wl,-Map,$(TARGET).map
+# Forzamos el uso del compilador de ARM para todas las tareas
+CC      := arm-none-eabi-gcc
+LD      := arm-none-eabi-gcc
 
-# Librerías
-LIBS     := -lnds9
+# Flags corregidos para evitar errores de Linker y encontrar las librerías
+CFLAGS  := -DARM9 -march=armv5te -mtune=arm946e-s -O2 -Wall \
+           -I$(DEVKITPRO)/libnds/include
 
-# Objetos
-OFILES   := main.o
+# Specs es el archivo que define la memoria de la NDS
+LDFLAGS := -specs=ds_arm9.specs -mthumb -mthumb-interwork $(ARCH) \
+           -L$(DEVKITPRO)/libnds/lib -Wl,-Map,$(TARGET).map
+
+LIBS    := -lnds9
 
 #---------------------------------------------------------------------------------
-# REGLAS
+# REGLAS DE COMPILACIÓN
 #---------------------------------------------------------------------------------
 .PHONY: all clean
 
@@ -35,11 +32,11 @@ all: $(TARGET).nds
 $(TARGET).nds: $(TARGET).elf
 	@ndstool -c $@ -9 $<
 
-$(TARGET).elf: $(OFILES)
-	$(CC) $(LDFLAGS) -o $@ $(OFILES) $(LIBS)
+$(TARGET).elf: main.o
+	$(LD) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-%.o: %.c
-	$(CC) $(CFLAGS) -I$(INCLUDES) -c $< -o $@
+main.o: main.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	@rm -rf $(BUILD) *.elf *.nds *.map *.o
+	rm -f *.o *.elf *.nds *.map
